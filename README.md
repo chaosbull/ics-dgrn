@@ -4,11 +4,11 @@
 
 对照模型是 STGCN、T-GCN、Graph WaveNet、AGCRN。都是按论文结构写的缩小版，隐层宽度基本是 32，不是官方仓库里的那一套权重。
 
-作者 [ZengWenquan](https://github.com/chaosbull)
+作者：chaosbull (https://github.com/chaosbull)
 
 ## 已有结果
 
-`results/` 里的表是之前一次 20 epoch 跑出来的，三个数据集都跑完了。脚本现在最多训 1000 个 epoch，再大的数会被截断。权重写到 `results/<数据集>/*_模型名.pt`。
+`results/` 里的表是之前一次 400 epoch 跑出来的，三个数据集都跑完了。脚本现在最多训 1000 个 epoch，再大的数会被截断。权重写到 `results/<数据集>/*_模型名.pt`。
 
 - 历史 12 步，预测 12 步
 - 损失 Smooth L1，Adam，余弦退火到 1e-5，梯度裁剪 5
