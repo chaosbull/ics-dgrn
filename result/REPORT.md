@@ -1,7 +1,7 @@
 # ICS-DGRN Experiment Report
 
 ## 1. Method
-- **ICS-DGRN**: Deep Graph Reservoir (ESP analysis in `2.pdf`) + interlayer Gaussian compression (ICS-DESN).
+- **ICS-DGRN**: Deep Graph Reservoir (ESP-constrained) + interlayer Gaussian compression (ICS-DESN style).
 - Training: fixed reservoir + ridge readout (RC / classical ML level, same as ICS-DESN).
 - ESP condition enforced per layer: `||W_l||_2 * ||S||_2 < 1`.
 

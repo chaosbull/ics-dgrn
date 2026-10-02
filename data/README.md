@@ -4,7 +4,15 @@ Author: chaosbull
 License: Apache-2.0  
 Project: ICS-DGRN
 
-This repository **does not** include raw PEMS tensors. Download / prepare them yourself, then place files as below.
+This repository **does not** include raw PEMS tensors.
+
+## Source
+
+Use the PEMS03 / PEMS04 / PEMS07 / PEMS08 preparation instructions from:
+
+- [STLGRU (Kishor-Bhaumik/STLGRU)](https://github.com/Kishor-Bhaumik/STLGRU)
+
+That project documents download links (Baidu Drive / Google Drive) for PEMS and related traffic datasets in DCRNN-style format.
 
 ## Expected paths
 
@@ -30,20 +38,8 @@ data/
 ## Array conventions
 
 - `train.npz` / `val.npz` / `test.npz` keys: `x`, `y`
-- Shapes: `x,y` → `(B, T, N, C)`; loaders use channel `0` (flow) → `(B, T, N)`
+- Shapes: `x,y` -> `(B, T, N, C)`; loaders use channel `0` (flow) -> `(B, T, N)`
 - Default window: `T=12` history, `T=12` horizon (same as DCRNN / common ST baselines)
-
-## Local development path (reference only)
-
-If you already keep data under the private working tree:
-
-```
-f:/PythonProject4/feifa2/data/PEMS03/
-f:/PythonProject4/feifa2/data/PEMS04/
-f:/PythonProject4/feifa2/data/PEMS08/
-```
-
-You can symlink or copy those folders into this repo’s `data/` directory before running experiments.
 
 ## Loader entry
 
