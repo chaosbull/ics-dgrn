@@ -1,0 +1,47 @@
+[
+  {
+    "tau": 0.5,
+    "max_kappa": 0.5003006389513658,
+    "esp_ok": true,
+    "layer1_late_over_early": 0.007587726220676746,
+    "layer2_late_over_early": 0.023175844527599253,
+    "final_Dhat_mean": 0.0006700549856759608,
+    "StateDecay": "Strong"
+  },
+  {
+    "tau": 0.7,
+    "max_kappa": 0.71416112200599,
+    "esp_ok": true,
+    "layer1_late_over_early": 0.009913879876804444,
+    "layer2_late_over_early": 0.0316800069915717,
+    "final_Dhat_mean": 0.0011516447411850095,
+    "StateDecay": "Strong"
+  },
+  {
+    "tau": 0.9,
+    "max_kappa": 0.8968679923652445,
+    "esp_ok": true,
+    "layer1_late_over_early": 0.014309328960422812,
+    "layer2_late_over_early": 0.044788315419684845,
+    "final_Dhat_mean": 0.002169277984648943,
+    "StateDecay": "Strong"
+  },
+  {
+    "tau": 1.0,
+    "max_kappa": 1.0481972171855176,
+    "esp_ok": false,
+    "layer1_late_over_early": 0.01642451311730639,
+    "layer2_late_over_early": 0.04464099184203891,
+    "final_Dhat_mean": 0.002261624438688159,
+    "StateDecay": "Moderate"
+  },
+  {
+    "tau": 1.1,
+    "max_kappa": 1.0875037946472617,
+    "esp_ok": false,
+    "layer1_late_over_early": 0.01897874874875566,
+    "layer2_late_over_early": 0.05600322605123778,
+    "final_Dhat_mean": 0.0031746975146234035,
+    "StateDecay": "Moderate"
+  }
+]

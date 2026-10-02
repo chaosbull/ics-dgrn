@@ -1,0 +1,14 @@
+{
+  "A_normal": {
+    "start": 104,
+    "end": 184
+  },
+  "B_rapid_rise": {
+    "start": 31,
+    "end": 111
+  },
+  "C_rapid_fall": {
+    "start": 41,
+    "end": 121
+  }
+}
