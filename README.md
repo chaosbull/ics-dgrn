@@ -1,4 +1,4 @@
-﻿# ICS-DGRN
+# ICS-DGRN
 
 **Interlayer Sparse Compression Deep Graph Reservoir Network** for short-term traffic flow forecasting.
 
