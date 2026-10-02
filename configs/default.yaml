@@ -1,0 +1,42 @@
+# Copyright 2024-2026 chaosbull
+# Licensed under the Apache License, Version 2.0
+# Author: chaosbull
+# Project: ICS-DGRN
+
+seed: 42
+
+dgrn:
+  layer_dims: [48, 32]
+  compression_dims: [24]
+  leak: 0.55
+  input_scale: 0.6
+  density: 0.25
+  ridge: 0.001
+  esp_target: 0.9
+  graph_norm: sym
+  pool: mix
+
+dgrn_trainable:
+  layer_dims: [56, 40]
+  compression_dims: [28]
+  esp_target: 0.9
+  emb_dim: 8
+  dropout: 0.05
+  density: 0.2
+
+ics_desn:
+  layer_sizes: [100, 80, 60]
+  compression_dims: [40, 30]
+  spectral_radius: 0.9
+  leak: 0.5
+  ridge: 0.001
+
+pems:
+  max_train: 600
+  max_val: 150
+  max_test: 250
+  datasets: [PEMS08, PEMS04]
+
+timeseries:
+  max_samples: 4000
+  datasets: [logistic, lorenz, sunspot, ETTh1, weather]

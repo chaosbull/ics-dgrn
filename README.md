@@ -1,98 +1,130 @@
-# ICS-DGRN
+﻿# ICS-DGRN
 
-图上的多层储层，用来做短时交通流预测。层和层之间用一个可训练的压缩把状态变短，循环权重每次前向都会按谱范数缩放到 `||W||_2 * ||S||_2 <= 0.95`，避免状态发散。读出是一个小 MLP，最后把当前观测值加回去。
+**Interlayer Sparse Compression Deep Graph Reservoir Network** for short-term traffic flow forecasting.
 
-对照模型是 STGCN、T-GCN、Graph WaveNet、AGCRN。都是按论文结构写的缩小版，隐层宽度基本是 32，不是官方仓库里的那一套权重。
+| | |
+|---|---|
+| Author | [chaosbull](https://github.com/chaosbull) |
+| License | [Apache License 2.0](LICENSE) |
+| Code + results | this repository |
+| Raw PEMS data | **not** shipped 鈥?see [data/README.md](data/README.md) |
 
-作者 [ZengWenquan](https://github.com/chaosbull)
+ICS-DGRN combines deep graph reservoirs with interlayer Gaussian compression, under an ESP (Echo State Property) spectral constraint. Recurrent weights are fixed after ESP scaling by default; input maps, compression, leak, and readout are trained.
 
-## 已有结果
+---
 
-`results/` 里的表是之前一次 20 epoch 跑出来的，三个数据集都跑完了。脚本现在最多训 1000 个 epoch，再大的数会被截断。权重写到 `results/<数据集>/*_模型名.pt`。
+## Repository layout
 
-- 历史 12 步，预测 12 步
-- 损失 Smooth L1，Adam，余弦退火到 1e-5，梯度裁剪 5
-- ICS-DGRN 学习率 8e-4，其余 1e-3，weight decay 1e-4，batch 32
-- 训练 / 验证 / 测试各随机抽 800 / 150 / 250 条，种子 42
-- 用训练集的均值和标准差做标准化，表里的 MAE、RMSE、R2 是还原到原始流量之后算的
+```
+ics-dgrn/
+鈹溾攢鈹€ LICENSE                 # Apache-2.0
+鈹溾攢鈹€ NOTICE
+鈹溾攢鈹€ README.md               # this file
+鈹溾攢鈹€ requirements.txt
+鈹溾攢鈹€ main.py                 # unified entry
+鈹溾攢鈹€ configs/default.yaml
+鈹溾攢鈹€ model/                  # ICS-DGRN / ICS-DESN / ESN / graph ops
+鈹溾攢鈹€ baselines/              # STGCN, TGCN, GWNet, AGCRN (+ ML baselines)
+鈹溾攢鈹€ data/                   # loaders only; place PEMS npz/pkl here (see data/README.md)
+鈹溾攢鈹€ experiments/            # training & evaluation scripts
+鈹溾攢鈹€ utils/                  # metrics, viz, ESP helpers
+鈹溾攢鈹€ checkpoints/            # optional *.pt (none exported in this release)
+鈹斺攢鈹€ result/                 # figures + CSV tables from runs
+    鈹溾攢鈹€ pems_st200/         # main DL comparison (300 epoch)
+    鈹溾攢鈹€ pems_newexp/        # mechanism experiments (compression / ESP / multi-seed / 鈥?
+    鈹溾攢鈹€ pems/               # Ridge reservoir + ablations
+    鈹溾攢鈹€ timeseries/         # synthetic / ETTh1 / weather style RC runs
+    鈹斺攢鈹€ REPORT.md
+```
 
-MAE 上 ICS-DGRN 三个集合都最低，参数和训练时间也最大。PEMS08 上和 STGCN 很接近（22.30 对 22.61），PEMS04 上拉开大约 1.2。
+No PDF papers and no raw traffic tensors are included.
 
-### PEMS03
+---
 
-| Model | MAE | RMSE | R2 | Train (s) |
-| --- | ---: | ---: | ---: | ---: |
-| ICS-DGRN | 20.13 | 30.86 | 0.950 | 195.9 |
-| STGCN | 20.78 | 32.16 | 0.945 | 25.5 |
-| AGCRN | 21.59 | 35.52 | 0.933 | 11.1 |
-| GWNet | 22.03 | 33.33 | 0.941 | 28.5 |
-| TGCN | 36.30 | 53.48 | 0.848 | 16.4 |
+## Results included
 
-### PEMS04
+| Path | Content |
+|------|---------|
+| [`result/pems_st200/`](result/pems_st200/) | ICS-DGRN vs STGCN / TGCN / GWNet / AGCRN on PEMS03/04/08 (300 epoch, CUDA) |
+| [`result/pems_newexp/`](result/pems_newexp/) | Compression ratio, sparse density, ESP state decay, ESP鈥揻orecast joint, fixed vs trainable, multi-seed, multi-horizon, compute, qualitative |
+| [`result/pems/`](result/pems/) | Ridge / classical RC comparison and graph鈥揑CS ablations |
+| [`result/timeseries/`](result/timeseries/) | Non-PEMS sequence experiments |
 
-| Model | MAE | RMSE | R2 | Train (s) |
-| --- | ---: | ---: | ---: | ---: |
-| ICS-DGRN | 26.93 | 41.41 | 0.932 | 175.3 |
-| STGCN | 28.17 | 43.46 | 0.925 | 22.1 |
-| AGCRN | 28.57 | 43.18 | 0.926 | 9.5 |
-| GWNet | 28.65 | 43.86 | 0.924 | 24.6 |
-| TGCN | 36.39 | 55.57 | 0.877 | 14.6 |
+Figure-by-figure notes for the mechanism suite: [`result/pems_newexp/REPORT.md`](result/pems_newexp/REPORT.md).  
+Main DL table draft: [`result/pems_st200/REPORT.md`](result/pems_st200/REPORT.md).
 
-### PEMS08
+**Checkpoints (`.pt`)**: this release does not contain trained weight files. Models were evaluated during training and only metrics/figures were saved. Use the scripts below to retrain; you may add `torch.save` under `checkpoints/` if needed.
 
-| Model | MAE | RMSE | R2 | Train (s) |
-| --- | ---: | ---: | ---: | ---: |
-| ICS-DGRN | 22.30 | 34.38 | 0.943 | 119.0 |
-| STGCN | 22.61 | 35.11 | 0.941 | 20.9 |
-| AGCRN | 23.54 | 35.91 | 0.938 | 7.7 |
-| GWNet | 23.63 | 36.14 | 0.937 | 15.4 |
-| TGCN | 40.39 | 62.34 | 0.813 | 10.8 |
+---
 
-MAPE 在 csv 里有，但流量会出现 0，这个数没有参考价值，上面就没列。重跑时会再画曲线和散点，那些 png 不放进仓库。
-
-## 环境
-
-Python 3.9+。有 CUDA 会用 GPU，没有就走 CPU，会慢很多。
+## Environment
 
 ```bash
+conda create -n py312 python=3.12 -y
+conda activate py312
+# install a CUDA build of PyTorch matching your driver, then:
 pip install -r requirements.txt
 ```
 
-## 数据
+Verified with PyTorch 2.5.x + CUDA 12.x on an NVIDIA GPU.
 
-npz 太大，没有放进仓库。用的是 [STSGCN](https://github.com/Davidham3/STSGCN) / ASTGCN 那套 PEMS03、PEMS04、PEMS08，放到 `data/`：
+---
+
+## Data (local path only)
+
+Place DCRNN-style PEMS files under `data/`:
 
 ```
-data/PEMS03/train.npz
-data/PEMS03/val.npz
-data/PEMS03/test.npz
-data/PEMS03/adj_PEMS03.pkl
+data/PEMS03/train.npz  val.npz  test.npz  adj_*.pkl
+data/PEMS04/...
+data/PEMS08/...
 ```
 
-PEMS04、PEMS08 同样命名。`x` 和 `y` 的形状是 `(样本, 12, 节点, 通道)`，代码只用第 0 个通道。邻接矩阵是 DCRNN 的 pickle，矩阵在第三个元素。
+Details and expected keys: [`data/README.md`](data/README.md).  
+Local development copy of the tensors (not in git): `f:/PythonProject4/feifa2/data/PEMS0X/`.
 
-## 重跑
+---
 
-在仓库根目录：
+## Reproduce experiments
 
 ```bash
-python experiments/run_compare.py --datasets PEMS08 PEMS04 PEMS03 --epochs 1000
+conda activate py312
+cd ics-dgrn-release
+
+# Main DL comparison 鈫?result/pems_st200/
+python -u experiments/run_pems_200ep.py --epochs 300 --datasets PEMS08 PEMS04 PEMS03
+
+# Mechanism suite 鈫?result/pems_newexp/
+python -u experiments/run_new_experiments.py --exps all --epochs 300 --datasets PEMS08
+
+# Ridge / ablation 鈫?result/pems/
+python -u experiments/run_pems.py
+
+# Optional timeseries RC 鈫?result/timeseries/
+python -u experiments/run_timeseries.py
+
+# Or via main.py
+python main.py --task pems_st --epochs 300
 ```
 
-`--epochs` 最大 1000。耐心和轮数一样，验证集还在降就会把设的轮数跑完。每个模型训完存一份 `.pt`，指标仍是 csv。
+Default protocol for DL runs: history 12 鈫?horizon 12; SmoothL1; Adam + CosineAnnealing; subsample train/val/test = 800/150/250; ICS-DGRN `layer_dims=[56,40]`, `compression_dims=[28]`, `esp_target=0.9`.
 
-## 代码
+---
+
+## Citation
+
+If you use this code or results, please cite the associated paper and credit:
 
 ```
-model/ics_dgrn.py            ICS-DGRN
-baselines/st_models.py       四个对照，以及训练、测试
-data/pems.py                 读 npz
-utils/metrics.py             MAE / RMSE / R2
-utils/viz.py                 曲线和表
-experiments/run_compare.py   入口
-results/                     指标表；新跑的权重是 .pt
+Author: chaosbull
+Project: ICS-DGRN
+License: Apache-2.0
 ```
 
-## 许可
+---
 
-[Apache License 2.0](LICENSE)。Copyright 2026 ZengWenquan.
+## License
+
+Copyright 2024-2026 chaosbull  
+
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

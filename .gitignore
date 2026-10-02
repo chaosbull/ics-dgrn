@@ -1,16 +1,44 @@
+# Python
 __pycache__/
 *.py[cod]
-.Python
-.venv/
-venv/
-env/
 *.egg-info/
 .eggs/
+dist/
+build/
+.venv/
+venv/
+
+# IDE / OS
 .idea/
 .vscode/
-.ipynb_checkpoints/
+*.swp
 .DS_Store
 Thumbs.db
 
-# 曲线、柱状图这些本地看就行，不放进仓库
-*.png
+# Logs & caches
+*.log
+.pytest_cache/
+.mypy_cache/
+
+# Raw datasets (place locally; do not commit)
+data/PEMS03/**
+data/PEMS04/**
+data/PEMS07/**
+data/PEMS08/**
+data/datasets/**
+!data/PEMS03/.gitkeep
+!data/PEMS04/.gitkeep
+!data/PEMS08/.gitkeep
+!data/**/.gitkeep
+*.npz
+*.pkl
+*.h5
+
+# Optional local checkpoints
+checkpoints/*.pt
+checkpoints/*.pth
+!checkpoints/.gitkeep
+!checkpoints/README.md
+
+# Notebooks checkpoints
+.ipynb_checkpoints/
