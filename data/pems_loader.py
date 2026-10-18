@@ -1,19 +1,3 @@
-# Copyright 2024-2026 chaosbull
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# Author: chaosbull
-# Project: ICS-DGRN
-
 """PEMS03/04/07/08 loaders (DCRNN / STGCN-style windowed traffic data)."""
 
 from __future__ import annotations
@@ -32,8 +16,10 @@ from model.graph_ops import load_pems_adjacency
 
 DATA_ROOT = os.path.dirname(os.path.abspath(__file__))
 
+
 def pems_dir(name: str) -> str:
     return os.path.join(DATA_ROOT, name.upper())
+
 
 def load_pems(
     name: str,
@@ -104,6 +90,7 @@ def load_pems(
         "std": std,
         "denorm": denorm,
     }
+
 
 def list_pems() -> Tuple[str, ...]:
     return ("PEMS03", "PEMS04", "PEMS07", "PEMS08")

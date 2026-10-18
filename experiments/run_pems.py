@@ -1,19 +1,3 @@
-# Copyright 2024-2026 chaosbull
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# Author: chaosbull
-# Project: ICS-DGRN
-
 """
 Spatiotemporal traffic forecasting on PEMS (core target of ICS-DGRN).
 
@@ -56,12 +40,15 @@ from utils.metrics import evaluate_all, mae
 from utils import viz
 from utils.esp_analysis import simulate_state_difference
 
+
 RESULT_ROOT = os.path.join(ROOT, "result", "pems")
+
 
 def _denorm_eval(y_true, y_pred, denorm) -> Dict[str, float]:
     yt = denorm(y_true)
     yp = denorm(y_pred)
     return evaluate_all(yt, yp)
+
 
 def _horizon_mae(y_true, y_pred, denorm) -> list:
     yt = denorm(y_true)
@@ -71,6 +58,7 @@ def _horizon_mae(y_true, y_pred, denorm) -> list:
     for h in range(yt.shape[1]):
         out.append(mae(yt[:, h], yp[:, h]))
     return out
+
 
 def flat_rc_features_from_windows(model_step_fn, reset_fn, x: np.ndarray) -> np.ndarray:
     """Generic: run a vector RC on flattened spatial mean; return (F,B)."""
@@ -84,6 +72,7 @@ def flat_rc_features_from_windows(model_step_fn, reset_fn, x: np.ndarray) -> np.
             st = model_step_fn(np.array([u[t]]))
         feats.append(st)
     return np.stack(feats, axis=1)
+
 
 def fit_flat_rc(build_model, x_tr, y_tr, ridge=1e-3, residual=True):
     model = build_model()
@@ -100,6 +89,7 @@ def fit_flat_rc(build_model, x_tr, y_tr, ridge=1e-3, residual=True):
     wout = ridge_fit(Fb, yb, ridge=ridge)
     return model, wout, residual
 
+
 def predict_flat_rc(model, wout, x, out_shape, residual=True):
     F = flat_rc_features_from_windows(model.step, model.reset, x)
     last = x[:, -1, :].reshape(len(x), -1).T
@@ -109,6 +99,7 @@ def predict_flat_rc(model, wout, x, out_shape, residual=True):
     if residual:
         y = y + x[:, -1:, :]
     return y
+
 
 class ResidualRidge:
     """Ridge on flattened windows predicting residual over last frame."""
@@ -125,6 +116,7 @@ class ResidualRidge:
 
     def predict(self, x):
         return self.inner.predict(x) + x[:, -1:, :]
+
 
 def run_pems(
     name: str = "PEMS08",
@@ -417,6 +409,7 @@ def run_pems(
     print(df.round(4))
     return df
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--datasets", nargs="+", default=["PEMS08", "PEMS04"])
@@ -451,6 +444,7 @@ def main():
     pivot = big.reset_index().pivot_table(index="index", columns="dataset", values="MAE")
     viz.plot_heatmap_metrics(pivot, os.path.join(RESULT_ROOT, "summary_mae_heatmap.png"), title="PEMS MAE summary")
     print("Saved to", RESULT_ROOT)
+
 
 if __name__ == "__main__":
     main()

@@ -1,20 +1,17 @@
-# Copyright 2024-2026 chaosbull
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# Author: chaosbull
-# Project: ICS-DGRN
+"""
+Trainable ICS-DGRN v3 (Deep Learning) — fast ESP-constrained Deep Graph Reservoir.
 
-"""Trainable ICS-DGRN v3 (Deep Learning) — fast ESP-constrained Deep Graph Reservoir."""
+Dynamics follow em.pdf / 2.pdf:
+  X^{(l)}(t) = (1-α) X^{(l)}(t-1) + α tanh(S X^{(l)}(t-1) W_l + H W_in)
+ESP: ||W_l||_2 * ||S||_2 <= esp_target < 1   (W fixed & pre-scaled by default)
+ICS: H(X) = X Phi^T  (trainable; optional sparse mask)
+
+Design (speed + echo fidelity):
+  - Fixed sparse recurrent W with one-shot ESP spectral scaling (no per-step SVD)
+  - Trainable Win / ICS Phi / leak / node emb / readout
+  - Optional trainable recurrent W for fixed-vs-trainable ablation
+  - 2-layer ICS stack, last+mean pooling, residual forecast
+"""
 
 from __future__ import annotations
 
@@ -44,6 +41,7 @@ def _power_spectral_norm(w: torch.Tensor, n_iter: int = 8) -> torch.Tensor:
         v = F.normalize(w @ u, dim=0)
     return torch.linalg.vector_norm(w.t() @ v).clamp_min(1e-8)
 
+
 def _make_sparse_w(d: int, density: float = 0.2, seed: int = 0) -> torch.Tensor:
     g = torch.Generator()
     g.manual_seed(seed)
@@ -51,6 +49,7 @@ def _make_sparse_w(d: int, density: float = 0.2, seed: int = 0) -> torch.Tensor:
     mask = torch.rand(d, d, generator=g) < density
     w = w * mask.float()
     return w
+
 
 class GraphReservoirLayer(nn.Module):
     """ESP-scaled graph reservoir layer; W fixed by default, optionally trainable."""
@@ -98,12 +97,14 @@ class GraphReservoirLayer(nn.Module):
         pre = sxw + self.win(h)
         return (1.0 - alpha) * state + alpha * torch.tanh(pre)
 
+
 class ICSCompress(nn.Module):
     """Interlayer Gaussian compression H(X)=X Phi^T with optional sparsity mask."""
 
-    def __init__(self, d_in: int, d_out: int, density: float = 1.0, seed: int = 0):
+    def __init__(self, d_in: int, d_out: int, density: float = 1.0, seed: int = 0, trainable: bool = True):
         super().__init__()
         self.density = float(density)
+        self.phi_trainable = bool(trainable)
         g = torch.Generator()
         g.manual_seed(seed)
         phi = torch.randn(d_out, d_in, generator=g) * (1.0 / max(d_out, 1) ** 0.5)
@@ -116,7 +117,10 @@ class ICSCompress(nn.Module):
             self.register_buffer("mask", mask, persistent=True)
         else:
             self.register_buffer("mask", torch.ones(d_out, d_in), persistent=True)
-        self.phi = nn.Parameter(phi)
+        if self.phi_trainable:
+            self.phi = nn.Parameter(phi)
+        else:
+            self.register_buffer("phi", phi, persistent=True)
 
     def effective_phi(self) -> torch.Tensor:
         return self.phi * self.mask
@@ -133,6 +137,7 @@ class ICSCompress(nn.Module):
             m = self.mask
             return float((m > 0).float().mean().item())
 
+
 class ICSDGRNTrainable(nn.Module):
     def __init__(
         self,
@@ -148,6 +153,7 @@ class ICSDGRNTrainable(nn.Module):
         density: float = 0.2,
         phi_density: float = 1.0,
         train_recurrent: bool = False,
+        train_phi: bool = False,
         seed: int = 42,
     ):
         super().__init__()
@@ -158,6 +164,7 @@ class ICSDGRNTrainable(nn.Module):
         self.esp_target = esp_target
         self.phi_density = float(phi_density)
         self.train_recurrent = bool(train_recurrent)
+        self.train_phi = bool(train_phi)
         self.seed = int(seed)
 
         comps = list(compression_dims)
@@ -189,6 +196,7 @@ class ICSDGRNTrainable(nn.Module):
                     self.comps[i],
                     density=phi_density,
                     seed=seed + 100 + i,
+                    trainable=train_phi,
                 )
             )
             self.layers.append(
@@ -377,6 +385,7 @@ class ICSDGRNTrainable(nn.Module):
             "mode": "trainable_dl_v3_trainW" if self.train_recurrent else "trainable_dl_v3_fixedW",
         }
 
+
 def build_ics_dgrn_trainable(
     n_nodes: int,
     hist: int,
@@ -389,6 +398,7 @@ def build_ics_dgrn_trainable(
     density: float = 0.2,
     phi_density: float = 1.0,
     train_recurrent: bool = False,
+    train_phi: bool = False,
     seed: int = 42,
 ) -> ICSDGRNTrainable:
     """Factory with optional compression-ratio / sparsity / trainable-W overrides."""
@@ -412,5 +422,6 @@ def build_ics_dgrn_trainable(
         density=density,
         phi_density=phi_density,
         train_recurrent=train_recurrent,
+        train_phi=train_phi,
         seed=seed,
     )

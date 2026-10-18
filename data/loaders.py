@@ -1,19 +1,3 @@
-# Copyright 2024-2026 chaosbull
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# Author: chaosbull
-# Project: ICS-DGRN
-
 """Unified data loading for DGRN experiments (ICS-DESN style datasets)."""
 
 from __future__ import annotations
@@ -28,6 +12,7 @@ from .prepare_synthetic import logistic_map, lorenz_system, synthetic_sunspot
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "datasets")
 
+
 def list_datasets() -> Dict[str, str]:
     return {
         "logistic": "Chaotic logistic map (synthetic)",
@@ -40,10 +25,12 @@ def list_datasets() -> Dict[str, str]:
         "weather": "Weather multivariate (Jena-style)",
     }
 
+
 def _minmax(x: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     mn = x.min(axis=0)
     mx = x.max(axis=0)
     return (x - mn) / (mx - mn + 1e-12), mn, mx
+
 
 def _read_csv(name: str) -> pd.DataFrame:
     path = os.path.join(DATA_DIR, name)
@@ -53,6 +40,7 @@ def _read_csv(name: str) -> pd.DataFrame:
         return pd.read_csv(path)
     except UnicodeDecodeError:
         return pd.read_csv(path, encoding="gbk")
+
 
 def load_raw(name: str) -> np.ndarray:
     """
@@ -99,6 +87,7 @@ def load_raw(name: str) -> np.ndarray:
 
     raise ValueError(f"Unknown dataset: {name}. Options: {list(list_datasets())}")
 
+
 def make_forecast_tensors(
     series: np.ndarray,
     window: int = 24,
@@ -128,6 +117,7 @@ def make_forecast_tensors(
         # one-step / multi-step univariate target (default last channel)
         Y[:, i] = series[e : e + horizon, target_col]
     return X, Y
+
 
 def load_dataset(
     name: str,

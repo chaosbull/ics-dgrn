@@ -1,20 +1,13 @@
-# Copyright 2024-2026 chaosbull
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# Author: chaosbull
-# Project: ICS-DGRN
+"""
+Deep Graph Reservoir Network with Interlayer Sparse Compression (ICS-DGRN).
 
-"""Deep Graph Reservoir Network with Interlayer Sparse Compression (ICS-DGRN)."""
+State update (2.pdf Eq.1):
+  X^{(l)}(t) = (1-α_l) X^{(l)}(t-1)
+             + α_l f( S X^{(l)}(t-1) W_l + Win,l H_{l-1}(X^{(l-1)}(t)) )
+
+ESP sufficient condition (2.pdf):  ||W_l||_2 * ||S||_2 < 1
+Interlayer H: Gaussian feature compression (ICS-DESN style).
+"""
 
 from __future__ import annotations
 
@@ -31,6 +24,7 @@ from .reservoir_utils import (
     ridge_predict,
     sparse_random_matrix,
 )
+
 
 @dataclass
 class DGRNConfig:
@@ -55,6 +49,7 @@ class DGRNConfig:
     residual: bool = True
     # append last input value to node features
     append_input: bool = True
+
 
 class ICSDGRN:
     """
@@ -352,6 +347,7 @@ class ICSDGRN:
             "esp_target": self.cfg.esp_target,
             "node_feat_dim": self._node_feat_dim,
         }
+
 
 # Alias matching paper naming
 DeepGraphReservoir = ICSDGRN

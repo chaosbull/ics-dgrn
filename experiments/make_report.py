@@ -1,19 +1,3 @@
-# Copyright 2024-2026 chaosbull
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# Author: chaosbull
-# Project: ICS-DGRN
-
 """Build a paper-style summary report from result tables/figures."""
 
 from __future__ import annotations
@@ -31,6 +15,7 @@ from utils import viz
 
 RESULT = os.path.join(ROOT, "result")
 
+
 def _df_to_md(df: pd.DataFrame) -> str:
     cols = list(df.columns)
     lines = ["| " + " | ".join(["model"] + cols) + " |", "| " + " | ".join(["---"] * (len(cols) + 1)) + " |"]
@@ -38,6 +23,7 @@ def _df_to_md(df: pd.DataFrame) -> str:
         cells = [str(idx)] + [f"{row[c]:.6g}" if isinstance(row[c], float) else str(row[c]) for c in cols]
         lines.append("| " + " | ".join(cells) + " |")
     return "\n".join(lines)
+
 
 def _collect_pems() -> pd.DataFrame:
     frames = []
@@ -60,6 +46,7 @@ def _collect_pems() -> pd.DataFrame:
     pivot = big.reset_index().pivot_table(index="index", columns="dataset", values="MAE")
     viz.plot_heatmap_metrics(pivot, os.path.join(pems_root, "summary_mae_heatmap.png"), title="PEMS MAE summary")
     return big
+
 
 def main():
     lines = ["# ICS-DGRN Experiment Report", ""]
@@ -118,6 +105,7 @@ def main():
     with open(out, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
     print("Wrote", out)
+
 
 if __name__ == "__main__":
     main()

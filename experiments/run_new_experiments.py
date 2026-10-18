@@ -1,20 +1,24 @@
-# Copyright 2024-2026 chaosbull
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# Author: chaosbull
-# Project: ICS-DGRN
+"""
+New experiments for ICS-DGRN (配套 新实验.md).
 
-"""Mechanism-validation experiments for ICS-DGRN (compression, ESP decay, multi-seed)."""
+Results are written to result/pems_newexp/ so they stay separate from
+result/pems_st200 (main DL table) and result/pems (Ridge / ablation).
+
+Experiments:
+  1. esp_decay          – State Difference Decay under spectral scaling τ
+  2. compression        – Interlayer compression-ratio sensitivity
+  3. density            – Compression-matrix sparse-density sensitivity
+  4. esp_forecast       – ESP κ ↔ state decay ↔ forecasting joint table
+  5. fixed_vs_trainable – Fixed vs trainable recurrent W (+ param counts)
+  6. multi_seed         – Multi-seed mean±std for ICS-DGRN (and AGCRN)
+  7. multi_horizon      – Horizon error growth G_horizon
+  8. compute            – Trainable/total params, time, peak GPU memory
+  9. qualitative        – Multi-scenario prediction curves
+
+Usage (conda py312):
+  python -u experiments/run_new_experiments.py --exps all
+  python -u experiments/run_new_experiments.py --exps esp_decay compression multi_seed
+"""
 
 from __future__ import annotations
 
@@ -55,6 +59,7 @@ RESULT_ROOT = os.path.join(ROOT, "result", "pems_newexp")
 DEFAULT_LAYER_DIMS = (56, 40)
 DEFAULT_COMP = (28,)
 
+
 def _cfg(epochs: int, seed: int, batch_size: int = 48) -> TrainConfig:
     return TrainConfig(
         epochs=epochs,
@@ -67,15 +72,18 @@ def _cfg(epochs: int, seed: int, batch_size: int = 48) -> TrainConfig:
         weight_decay=5e-5,
     )
 
+
 def _peak_mem_mb() -> float:
     if torch.cuda.is_available():
         return float(torch.cuda.max_memory_allocated() / (1024**2))
     return 0.0
 
+
 def _reset_peak_mem() -> None:
     if torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
         torch.cuda.empty_cache()
+
 
 def train_ics(
     data: dict,
@@ -155,8 +163,10 @@ def train_ics(
             row[f"phi_spec_norm_l{i}"] = float(v)
     return pack, ypd, row, esp, hmae, yt
 
+
 def load_data(ds: str, seed: int, max_train: int, max_val: int, max_test: int) -> dict:
     return load_pems(ds, max_train=max_train, max_val=max_val, max_test=max_test, seed=seed)
+
 
 # ---------------------------------------------------------------------------
 # 1. ESP state-difference decay
@@ -251,6 +261,7 @@ def run_esp_decay(args) -> None:
         json.dump(summary_rows, f, indent=2)
     print("[esp_decay] saved", out)
 
+
 # ---------------------------------------------------------------------------
 # helper: sensitivity sweep
 # ---------------------------------------------------------------------------
@@ -284,6 +295,7 @@ def _save_sensitivity(out: str, ds: str, tag: str, rows: List[dict], x_key: str,
     fig.savefig(os.path.join(out, f"{ds}_{tag}_params_vs_mae.png"), bbox_inches="tight")
     plt.close(fig)
 
+
 def run_compression(args) -> None:
     out = os.path.join(RESULT_ROOT, "compression_ratio")
     ds = args.datasets[0]
@@ -311,6 +323,7 @@ def run_compression(args) -> None:
         json.dump(rows, f, indent=2, default=float)
     print("[compression] saved", out)
 
+
 def run_density(args) -> None:
     out = os.path.join(RESULT_ROOT, "sparse_density")
     ds = args.datasets[0]
@@ -335,6 +348,7 @@ def run_density(args) -> None:
         f"{ds} Compression Sparse-Density Sensitivity",
     )
     print("[density] saved", out)
+
 
 def run_esp_forecast(args) -> None:
     out = os.path.join(RESULT_ROOT, "esp_forecast_joint")
@@ -406,6 +420,7 @@ def run_esp_forecast(args) -> None:
     plt.close(fig)
     print("[esp_forecast] saved", out)
 
+
 def run_fixed_vs_trainable(args) -> None:
     out = os.path.join(RESULT_ROOT, "fixed_vs_trainable")
     os.makedirs(out, exist_ok=True)
@@ -448,6 +463,7 @@ def run_fixed_vs_trainable(args) -> None:
     fig.savefig(os.path.join(out, f"{ds}_fixed_vs_trainable.png"), bbox_inches="tight")
     plt.close(fig)
     print("[fixed_vs_trainable] saved", out)
+
 
 def run_multi_seed(args) -> None:
     out = os.path.join(RESULT_ROOT, "multi_seed")
@@ -554,6 +570,7 @@ def run_multi_seed(args) -> None:
         plt.close(fig)
     print("[multi_seed] saved", out)
 
+
 def run_multi_horizon(args) -> None:
     """Train ICS-DGRN + baselines once; report G_horizon / ΔMAE."""
     out = os.path.join(RESULT_ROOT, "multi_horizon")
@@ -620,6 +637,7 @@ def run_multi_horizon(args) -> None:
     plt.close(fig)
     print("[multi_horizon] saved", out)
 
+
 def run_compute(args) -> None:
     """Parameterization / memory overhead vs baselines (single dataset)."""
     out = os.path.join(RESULT_ROOT, "compute_overhead")
@@ -684,6 +702,7 @@ def run_compute(args) -> None:
     fig.savefig(os.path.join(out, f"{ds}_compute_overhead.png"), bbox_inches="tight")
     plt.close(fig)
     print("[compute] saved", out)
+
 
 def run_qualitative(args) -> None:
     """Multi-scenario qualitative curves: ICS-DGRN vs AGCRN."""
@@ -752,71 +771,179 @@ def run_qualitative(args) -> None:
         json.dump(meta, f, indent=2)
     print("[qualitative] saved", out)
 
+
 def write_master_report(args) -> None:
-    """Write a compact metrics summary (does not overwrite the figure guide REPORT.md)."""
+    """Assemble paper-tone REPORT.md from whatever sub-results exist."""
     lines = [
-        "# ICS-DGRN mechanism experiments — metrics summary",
+        "# ICS-DGRN 补充实验报告（`result/pems_newexp`）",
         "",
-        f"- Protocol: hist=12, horizon=12, epochs={args.epochs}, SmoothL1, Adam+Cosine",
-        f"- Subsample train/val/test = {args.max_train}/{args.max_val}/{args.max_test}",
+        "> 本目录与 `result/pems_st200`（主对比表）、`result/pems`（Ridge/消融）**相互独立**，专门对应 `新实验.md` 中的机制验证实验。",
+        "",
+        f"- Protocol: hist=12, horizon=12, epochs={args.epochs}, SmoothL1, Adam+Cosine, subsample {args.max_train}/{args.max_val}/{args.max_test}",
+        f"- Device: CUDA auto (PyTorch)",
         f"- Default ICS-DGRN: layer_dims={list(DEFAULT_LAYER_DIMS)}, compression_dims={list(DEFAULT_COMP)}, esp_target=0.9",
         "",
-        "See `REPORT.md` in this folder for per-figure explanations.",
+        "---",
         "",
     ]
 
-    def _append_csv(title: str, path: str, cols=None) -> None:
-        if not os.path.exists(path):
-            return
-        df = pd.read_csv(path)
-        if cols:
-            cols = [c for c in cols if c in df.columns]
-            df = df[cols]
-        lines.extend(["## " + title, "", df.round(4).to_string(index=False), ""])
+    # compression
+    p = os.path.join(RESULT_ROOT, "compression_ratio")
+    files = [f for f in os.listdir(p)] if os.path.isdir(p) else []
+    csvs = [f for f in files if f.endswith("_compression_metrics.csv")]
+    if csvs:
+        df = pd.read_csv(os.path.join(p, csvs[0]))
+        lines += [
+            "## 1. Interlayer Sparse Compression — Compression Ratio",
+            "",
+            "固定其余超参，仅改变层间压缩比 r=d_l/d_{l-1}。",
+            "",
+            df[["compression_ratio", "compression_dim", "MAE", "RMSE", "R2", "TrainableParams", "TrainTimeSec"]]
+            .round(4)
+            .to_string(index=False),
+            "",
+            "解读要点：关注是否出现**中等压缩**下的性能—复杂度折中，而非单调“压缩越强越好”。",
+            "",
+        ]
 
-    _append_csv(
-        "Compression ratio",
-        os.path.join(RESULT_ROOT, "compression_ratio", "PEMS08_compression_metrics.csv"),
-        ["compression_ratio", "compression_dim", "MAE", "RMSE", "R2", "TrainableParams", "TrainTimeSec"],
-    )
-    _append_csv(
-        "Sparse density",
-        os.path.join(RESULT_ROOT, "sparse_density", "PEMS08_density_metrics.csv"),
-        ["rho", "MAE", "RMSE", "R2", "TrainableParams", "TrainTimeSec"],
-    )
-    _append_csv(
-        "ESP state decay",
-        os.path.join(RESULT_ROOT, "esp_state_decay", "PEMS08_esp_decay_summary.csv"),
-    )
-    _append_csv(
-        "ESP–forecast joint",
-        os.path.join(RESULT_ROOT, "esp_forecast_joint", "PEMS08_esp_forecast_table.csv"),
-    )
-    _append_csv(
-        "Fixed vs trainable",
-        os.path.join(RESULT_ROOT, "fixed_vs_trainable", "PEMS08_fixed_vs_trainable.csv"),
-        ["variant", "MAE", "RMSE", "R2", "TrainableParams", "TotalParams", "TrainTimeSec", "PeakGPUMemMB"],
-    )
-    _append_csv(
-        "Multi-seed",
-        os.path.join(RESULT_ROOT, "multi_seed", "multi_seed_summary.csv"),
-    )
-    _append_csv(
-        "Multi-horizon growth",
-        os.path.join(RESULT_ROOT, "multi_horizon", "PEMS08_horizon_growth.csv"),
-        ["model", "MAE", "MAE_h1", "MAE_h12", "DeltaMAE", "G_horizon"],
-    )
-    _append_csv(
-        "Compute overhead",
-        os.path.join(RESULT_ROOT, "compute_overhead", "PEMS08_compute_overhead.csv"),
-        ["model", "MAE", "TrainableParams", "TotalParams", "TrainTimeSec", "PeakGPUMemMB"],
-    )
+    # density
+    p = os.path.join(RESULT_ROOT, "sparse_density")
+    csvs = [f for f in os.listdir(p) if f.endswith("_density_metrics.csv")] if os.path.isdir(p) else []
+    if csvs:
+        df = pd.read_csv(os.path.join(p, csvs[0]))
+        lines += [
+            "## 2. Sparse Density Sensitivity",
+            "",
+            "固定压缩维度，改变 compression matrix 非零比例 ρ。",
+            "",
+            df[["rho", "MAE", "RMSE", "R2", "TrainableParams", "TrainTimeSec"]].round(4).to_string(index=False),
+            "",
+            "预期为 moderate sparsity 附近的折中；过密减弱结构归纳偏置，过疏削弱层间信息传递。",
+            "",
+        ]
 
+    # esp decay
+    p = os.path.join(RESULT_ROOT, "esp_state_decay")
+    csvs = [f for f in os.listdir(p) if f.endswith("_esp_decay_summary.csv")] if os.path.isdir(p) else []
+    if csvs:
+        df = pd.read_csv(os.path.join(p, csvs[0]))
+        lines += [
+            "## 3. Empirical ESP — State Difference Decay",
+            "",
+            "相同输入、不同初态下归一化状态差 hat{D}_l(t) 随时间演化（对数纵轴图见同目录 png）。",
+            "",
+            df.round(4).to_string(index=False),
+            "",
+            "措辞约束：tau>=1 时若衰减变弱，仅说明**稳定性下降与充分条件不再保证**，不能写成“证明 ESP 被违背”。",
+            "",
+        ]
+
+    # esp forecast
+    p = os.path.join(RESULT_ROOT, "esp_forecast_joint")
+    csvs = [f for f in os.listdir(p) if f.endswith("_esp_forecast_table.csv")] if os.path.isdir(p) else []
+    if csvs:
+        df = pd.read_csv(os.path.join(p, csvs[0]))
+        lines += [
+            "## 4. ESP Condition ↔ Forecasting (Joint)",
+            "",
+            df.round(4).to_string(index=False),
+            "",
+            "论述使用 **consistent with**：收缩区（kappa_l<1）往往伴随更快状态收缩与更稳的多步误差；不作因果“证明”表述。",
+            "",
+        ]
+
+    # fixed vs trainable
+    p = os.path.join(RESULT_ROOT, "fixed_vs_trainable")
+    csvs = [f for f in os.listdir(p) if f.endswith("_fixed_vs_trainable.csv")] if os.path.isdir(p) else []
+    if csvs:
+        df = pd.read_csv(os.path.join(p, csvs[0]))
+        lines += [
+            "## 5. Fixed vs Trainable Reservoir",
+            "",
+            df[["variant", "MAE", "RMSE", "R2", "TrainableParams", "TotalParams", "TrainTimeSec", "PeakGPUMemMB"]]
+            .round(4)
+            .to_string(index=False),
+            "",
+            "若固定水库在更少可训练参数下性能不劣，则可支持：fixed reservoir 是当前设定下可竞争的优化范式。",
+            "",
+        ]
+
+    # multi seed
+    p = os.path.join(RESULT_ROOT, "multi_seed", "multi_seed_summary.csv")
+    if os.path.exists(p):
+        df = pd.read_csv(p)
+        lines += [
+            "## 6. Multi-seed Stability",
+            "",
+            df.round(4).to_string(index=False),
+            "",
+        ]
+        # PEMS08 ICS vs AGCRN note
+        sub = df[(df["dataset"] == "PEMS08")]
+        if len(sub) >= 2:
+            lines.append(
+                "若 PEMS08 上 ICS-DGRN 与 AGCRN 的均值±标准差高度重叠，应写明二者 **statistically comparable**，以增强可信度。"
+            )
+            lines.append("")
+
+    # multi horizon
+    p = os.path.join(RESULT_ROOT, "multi_horizon")
+    csvs = [f for f in os.listdir(p) if f.endswith("_horizon_growth.csv")] if os.path.isdir(p) else []
+    if csvs:
+        df = pd.read_csv(os.path.join(p, csvs[0]))
+        lines += [
+            "## 7. Multi-horizon Error Growth",
+            "",
+            df[["model", "MAE", "MAE_h1", "MAE_h12", "DeltaMAE", "G_horizon"]].round(4).to_string(index=False),
+            "",
+            "指标定义：G_horizon=(MAE_12-MAE_1)/MAE_1，DeltaMAE=MAE_12-MAE_1。",
+            "",
+        ]
+
+    # compute
+    p = os.path.join(RESULT_ROOT, "compute_overhead")
+    csvs = [f for f in os.listdir(p) if f.endswith("_compute_overhead.csv")] if os.path.isdir(p) else []
+    if csvs:
+        df = pd.read_csv(os.path.join(p, csvs[0]))
+        lines += [
+            "## 8. Computational Overhead (repositioned)",
+            "",
+            "目标不是证明 ICS-DGRN 最快，而是说明其在**部分固定参数**范式下仍具竞争预测性能。",
+            "",
+            df[["model", "MAE", "TrainableParams", "TotalParams", "TrainTimeSec", "PeakGPUMemMB"]].round(4).to_string(
+                index=False
+            ),
+            "",
+        ]
+
+    lines += [
+        "## 9. Qualitative multi-scenario",
+        "",
+        "见 `qualitative/` 下 Scenario A/B/C 曲线（正常 / 快速上升 / 快速下降）。定性证据，不作为核心精度证明。",
+        "",
+        "---",
+        "",
+        "## 目录结构",
+        "",
+        "```",
+        "result/pems_newexp/",
+        "  REPORT.md",
+        "  esp_state_decay/",
+        "  compression_ratio/",
+        "  sparse_density/",
+        "  esp_forecast_joint/",
+        "  fixed_vs_trainable/",
+        "  multi_seed/",
+        "  multi_horizon/",
+        "  compute_overhead/",
+        "  qualitative/",
+        "```",
+        "",
+    ]
     os.makedirs(RESULT_ROOT, exist_ok=True)
-    out = os.path.join(RESULT_ROOT, "METRICS_SUMMARY.md")
-    with open(out, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
-    print("Wrote", out)
+    with open(os.path.join(RESULT_ROOT, "REPORT.md"), "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+    print("Wrote", os.path.join(RESULT_ROOT, "REPORT.md"))
 
 
 EXPERIMENT_FUNCS = {
@@ -830,6 +957,7 @@ EXPERIMENT_FUNCS = {
     "compute": run_compute,
     "qualitative": run_qualitative,
 }
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -860,6 +988,7 @@ def main():
     print("Results ->", RESULT_ROOT)
 
     if "all" in args.exps:
+        # priority order from 新实验.md
         ordered = [
             "esp_decay",
             "compression",
@@ -886,6 +1015,7 @@ def main():
 
     write_master_report(args)
     print("Done. See", RESULT_ROOT)
+
 
 if __name__ == "__main__":
     main()

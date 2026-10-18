@@ -1,8 +1,4 @@
-# Copyright 2024-2026 chaosbull
-# Licensed under the Apache License, Version 2.0
-# Author: chaosbull
-# Project: ICS-DGRN
-
+# ICS-DGRN default hyperparameters
 seed: 42
 
 dgrn:
@@ -23,6 +19,7 @@ dgrn_trainable:
   emb_dim: 8
   dropout: 0.05
   density: 0.2
+  note: "fixed ESP-scaled W; trainable Win/ICS/leak/readout + low-rank graph mix"
 
 ics_desn:
   layer_sizes: [100, 80, 60]

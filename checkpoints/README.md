@@ -1,10 +1,10 @@
 # Checkpoints
 
-Author: chaosbull  
-License: Apache-2.0  
+Author: [chaosbull](https://github.com/chaosbull)  
+License: Apache-2.0
 
-This release does **not** ship trained `.pt` / `.pth` weights.  
-Metrics and figures under `result/` were produced during training without exporting state dicts.
+This release does not ship trained `.pt` / `.pth` weights.
+Tables and figures under `result/` were saved from training runs; state dicts were not exported.
 
 To save weights yourself after training:
 

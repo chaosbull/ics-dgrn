@@ -1,19 +1,3 @@
-# Copyright 2024-2026 chaosbull
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# Author: chaosbull
-# Project: ICS-DGRN
-
 """
 Compare ICS-DGRN with trainable spatiotemporal deep models.
 
@@ -50,6 +34,7 @@ from utils import viz
 
 RESULT_ROOT = os.path.join(ROOT, "result", "pems_st")
 
+
 # Same-category DL comparison (Adam / multi-epoch for all).
 SCORE_DIMS = [
     ("MAE", "low", "acc"),
@@ -64,11 +49,14 @@ SCORE_DIMS = [
     ("ESP_Guarantee", "high", "theory"),  # 2.pdf spectral ESP held
 ]
 
+
 def _denorm_pack(y, denorm):
     return denorm(y)
 
+
 def _horizon_mae(yt, yp) -> List[float]:
     return [mae(yt[:, h], yp[:, h]) for h in range(yt.shape[1])]
+
 
 def run_ics_dgrn(data, seed=42, epochs=20) -> Tuple[Dict, np.ndarray, Dict]:
     """
@@ -120,6 +108,7 @@ def run_ics_dgrn(data, seed=42, epochs=20) -> Tuple[Dict, np.ndarray, Dict]:
     }
     return meta, yp, pack
 
+
 def run_trainable(name, data, seed=42, epochs=25) -> Tuple[Dict, np.ndarray, Dict]:
     x_tr, y_tr = data["x_train"], data["y_train"]
     x_va, y_va = data["x_val"], data["y_val"]
@@ -148,6 +137,7 @@ def run_trainable(name, data, seed=42, epochs=25) -> Tuple[Dict, np.ndarray, Dic
         "history": pack["history"],
     }
     return meta, yp, pack
+
 
 def scorecard(results: Dict[str, Dict], proposed: str = "ICS-DGRN") -> pd.DataFrame:
     """Mark whether ICS-DGRN is excellent on each dimension."""
@@ -179,6 +169,7 @@ def scorecard(results: Dict[str, Dict], proposed: str = "ICS-DGRN") -> pd.DataFr
             }
         )
     return pd.DataFrame(rows)
+
 
 def plot_multidim_bars(results: Dict[str, Dict], out_dir: str, ds: str):
     # normalize each dim to [0,1] score (1=best)
@@ -213,6 +204,7 @@ def plot_multidim_bars(results: Dict[str, Dict], out_dir: str, ds: str):
         title=f"{ds} multi-dimensional comparison",
     )
     return avg, scores, labels
+
 
 def run_dataset(
     name: str,
@@ -383,6 +375,7 @@ def run_dataset(
         print(f"[{name}] WARNING: excellence-rate < 80%, check scorecard.")
     return df
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--datasets", nargs="+", default=["PEMS08", "PEMS04", "PEMS03"])
@@ -462,6 +455,7 @@ def main():
     with open(out, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
     print("Saved", RESULT_ROOT)
+
 
 if __name__ == "__main__":
     main()

@@ -1,19 +1,3 @@
-# Copyright 2024-2026 chaosbull
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# Author: chaosbull
-# Project: ICS-DGRN
-
 """Graph operators for Deep Graph Reservoir (DGRN / ICS-DGRN)."""
 
 from __future__ import annotations
@@ -22,6 +6,7 @@ import pickle
 from typing import Optional, Tuple, Union
 
 import numpy as np
+
 
 def load_pems_adjacency(path: str) -> np.ndarray:
     """
@@ -40,6 +25,7 @@ def load_pems_adjacency(path: str) -> np.ndarray:
     if adj.ndim != 2 or adj.shape[0] != adj.shape[1]:
         raise ValueError(f"Invalid adjacency shape: {adj.shape}")
     return adj
+
 
 def normalize_adjacency(
     adj: np.ndarray,
@@ -75,6 +61,7 @@ def normalize_adjacency(
 
     raise ValueError(f"Unknown normalize mode: {mode}")
 
+
 def spectral_norm(mat: np.ndarray) -> float:
     """Largest singular value (induced 2-norm)."""
     # For moderate N use SVD; for large N approximate with power iteration
@@ -91,6 +78,7 @@ def spectral_norm(mat: np.ndarray) -> float:
             return 0.0
         v /= nrm
     return float(np.linalg.norm(m @ v))
+
 
 def scale_operator_for_esp(
     s: np.ndarray,
@@ -109,6 +97,7 @@ def scale_operator_for_esp(
     w2 = w * scale
     return s, w2, ns, spectral_norm(w2)
 
+
 def correlation_graph(series: np.ndarray, threshold: float = 0.3) -> np.ndarray:
     """
     Build a correlation graph from multivariate series (T, C).
@@ -122,6 +111,7 @@ def correlation_graph(series: np.ndarray, threshold: float = 0.3) -> np.ndarray:
     adj = np.abs(corr)
     adj[adj < threshold] = 0.0
     return adj
+
 
 def delay_embedding_graph(window: int) -> np.ndarray:
     """Chain graph for delay-embedding nodes (univariate ICS-style)."""

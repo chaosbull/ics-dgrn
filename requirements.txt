@@ -2,6 +2,9 @@
 # Licensed under the Apache License, Version 2.0
 # Author: chaosbull
 # Project: ICS-DGRN
+#
+# Install a CUDA build of PyTorch separately, then:
+#   pip install -r requirements.txt
 
 numpy>=1.24
 pandas>=2.0
@@ -13,5 +16,3 @@ tqdm>=4.66
 openpyxl>=3.1
 networkx>=3.0
 PyYAML>=6.0
-# Install a CUDA build of torch separately, e.g.:
-#   pip install torch --index-url https://download.pytorch.org/whl/cu121

@@ -1,19 +1,3 @@
-# Copyright 2024-2026 chaosbull
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# Author: chaosbull
-# Project: ICS-DGRN
-
 """
 Trainable spatiotemporal forecasting baselines (PyTorch) + shared trainer.
 
@@ -32,8 +16,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
+
 def count_params(model: nn.Module) -> int:
     return int(sum(p.numel() for p in model.parameters() if p.requires_grad))
+
 
 def build_normalized_adj(adj: np.ndarray, device: torch.device) -> torch.Tensor:
     a = adj.astype(np.float64)
@@ -43,6 +29,7 @@ def build_normalized_adj(adj: np.ndarray, device: torch.device) -> torch.Tensor:
     s = d_inv_sqrt[:, None] * a * d_inv_sqrt[None, :]
     return torch.tensor(s, dtype=torch.float32, device=device)
 
+
 class GraphConv(nn.Module):
     def __init__(self, c_in: int, c_out: int):
         super().__init__()
@@ -50,6 +37,7 @@ class GraphConv(nn.Module):
 
     def forward(self, x: torch.Tensor, s: torch.Tensor) -> torch.Tensor:
         return self.theta(torch.matmul(s, x))
+
 
 class TemporalConv(nn.Module):
     def __init__(self, c_in: int, c_out: int, kernel: int = 3):
@@ -60,6 +48,7 @@ class TemporalConv(nn.Module):
         y = self.conv(x)
         p, q = y.chunk(2, dim=1)
         return p * torch.sigmoid(q)
+
 
 class STConvBlock(nn.Module):
     def __init__(self, c_in: int, c_hid: int, c_out: int, n_nodes: int):
@@ -80,6 +69,7 @@ class STConvBlock(nn.Module):
         out = self.bn(out + self.align(x))
         return F.relu(out)
 
+
 class STGCN(nn.Module):
     def __init__(self, n_nodes: int, hist: int, horizon: int, channels: int = 32):
         super().__init__()
@@ -92,6 +82,7 @@ class STGCN(nn.Module):
         h = self.block1(h, s)
         h = self.block2(h, s)
         return self.head(h).squeeze(-1)
+
 
 class TGCNCell(nn.Module):
     def __init__(self, n_nodes: int, hid: int):
@@ -107,6 +98,7 @@ class TGCNCell(nn.Module):
         c = torch.tanh(self.gc_c(torch.cat([x, r * h], dim=-1), s))
         return u * h + (1 - u) * c
 
+
 class TGCN(nn.Module):
     def __init__(self, n_nodes: int, hist: int, horizon: int, hid: int = 32):
         super().__init__()
@@ -121,6 +113,7 @@ class TGCN(nn.Module):
             h = self.cell(x[:, i, :].unsqueeze(-1), h, s)
         return self.out(h).permute(0, 2, 1)
 
+
 class DilatedInception(nn.Module):
     def __init__(self, c_in: int, c_out: int, dilation: int):
         super().__init__()
@@ -128,6 +121,7 @@ class DilatedInception(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.conv(x)
+
 
 class GWNetLite(nn.Module):
     def __init__(self, n_nodes: int, hist: int, horizon: int, channels: int = 32, layers: int = 4):
@@ -155,6 +149,7 @@ class GWNetLite(nn.Module):
             h = h + z2
         return self.end(h[..., -1:]).squeeze(-1)
 
+
 class AGCRNLite(nn.Module):
     def __init__(self, n_nodes: int, hist: int, horizon: int, hid: int = 32, emb: int = 8):
         super().__init__()
@@ -174,6 +169,7 @@ class AGCRNLite(nn.Module):
             h = torch.tanh(self.w_in(torch.cat([xt, emb], dim=-1)) + self.w_hh(h))
             h = F.relu(self.g(h, s)) + h
         return self.out(h).permute(0, 2, 1)
+
 
 class STID(nn.Module):
     def __init__(self, n_nodes: int, hist: int, horizon: int, hid: int = 64, emb: int = 16):
@@ -195,8 +191,10 @@ class STID(nn.Module):
         feat = torch.cat([x.permute(0, 2, 1), node, te], dim=-1)
         return self.mlp(feat).permute(0, 2, 1)
 
+
 def default_device() -> str:
     return "cuda" if torch.cuda.is_available() else "cpu"
+
 
 @dataclass
 class TrainConfig:
@@ -209,12 +207,14 @@ class TrainConfig:
     seed: int = 42
     loss: str = "smooth_l1"  # l1 | mse | smooth_l1
 
+
 def _loss_fn(pred, target, kind: str):
     if kind == "mse":
         return F.mse_loss(pred, target)
     if kind == "smooth_l1":
         return F.smooth_l1_loss(pred, target)
     return F.l1_loss(pred, target)
+
 
 def train_st_model(
     model: nn.Module,
@@ -336,6 +336,7 @@ def train_st_model(
         "loss_name": cfg.loss,
     }
 
+
 @torch.no_grad()
 def predict_st_model(pack: Dict, x: np.ndarray, batch_size: int = 64) -> Tuple[np.ndarray, float]:
     model: nn.Module = pack["model"]
@@ -349,6 +350,56 @@ def predict_st_model(pack: Dict, x: np.ndarray, batch_size: int = 64) -> Tuple[n
         preds.append(model(xb, s).cpu().numpy())
     return np.concatenate(preds, axis=0), time.perf_counter() - t0
 
+
+class DiffusionConv(nn.Module):
+    """K-step diffusion convolution used by the DCRNN baseline."""
+
+    def __init__(self, c_in: int, c_out: int, k: int = 2):
+        super().__init__()
+        self.k = k
+        self.fc = nn.Linear((k + 1) * c_in, c_out)
+
+    def forward(self, x: torch.Tensor, s: torch.Tensor) -> torch.Tensor:
+        feats = [x]
+        h = x
+        for _ in range(self.k):
+            h = torch.matmul(s, h)
+            feats.append(h)
+        return self.fc(torch.cat(feats, dim=-1))
+
+
+class DCGRUCell(nn.Module):
+    def __init__(self, hid: int, k: int = 2):
+        super().__init__()
+        self.hid = hid
+        self.gate = DiffusionConv(1 + hid, 2 * hid, k=k)
+        self.cand = DiffusionConv(1 + hid, hid, k=k)
+
+    def forward(self, x: torch.Tensor, h: torch.Tensor, s: torch.Tensor) -> torch.Tensor:
+        z = self.gate(torch.cat([x, h], dim=-1), s)
+        r, u = z.chunk(2, dim=-1)
+        r, u = torch.sigmoid(r), torch.sigmoid(u)
+        c = torch.tanh(self.cand(torch.cat([x, r * h], dim=-1), s))
+        return u * h + (1.0 - u) * c
+
+
+class DCRNN(nn.Module):
+    """Compact diffusion-convolutional recurrent baseline (K=2)."""
+
+    def __init__(self, n_nodes: int, hist: int, horizon: int, hid: int = 32):
+        super().__init__()
+        self.hid = hid
+        self.cell = DCGRUCell(hid, k=2)
+        self.out = nn.Linear(hid, horizon)
+
+    def forward(self, x: torch.Tensor, s: torch.Tensor) -> torch.Tensor:
+        b, t, n = x.shape
+        h = torch.zeros(b, n, self.hid, device=x.device, dtype=x.dtype)
+        for i in range(t):
+            h = self.cell(x[:, i].unsqueeze(-1), h, s)
+        return self.out(h).permute(0, 2, 1)
+
+
 def build_model(name: str, n_nodes: int, hist: int, horizon: int) -> nn.Module:
     name = name.upper().replace("-", "")
     if name == "STGCN":
@@ -359,6 +410,8 @@ def build_model(name: str, n_nodes: int, hist: int, horizon: int) -> nn.Module:
         return GWNetLite(n_nodes, hist, horizon, channels=32, layers=4)
     if name == "AGCRN":
         return AGCRNLite(n_nodes, hist, horizon, hid=32, emb=8)
+    if name == "DCRNN":
+        return DCRNN(n_nodes, hist, horizon, hid=32)
     if name == "STID":
         return STID(n_nodes, hist, horizon, hid=64, emb=16)
     if name in ("ICSDGRN", "DGRN"):

@@ -1,20 +1,12 @@
-# Copyright 2024-2026 chaosbull
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# Author: chaosbull
-# Project: ICS-DGRN
+"""
+200-epoch full comparison: ICS-DGRN(v2) vs STGCN/TGCN/GWNet/AGCRN.
 
-"""200-epoch full comparison: ICS-DGRN(v2) vs STGCN/TGCN/GWNet/AGCRN."""
+Saves per-model:
+  - train/val loss & MAE curves
+  - metrics CSV/XLSX
+  - prediction / scatter / error hist
+  - multi-metric bars & scorecard
+"""
 
 from __future__ import annotations
 
@@ -54,6 +46,7 @@ SCORE_DIMS = [
     ("MAE_TrainCost", "low", "eff"),
     ("ESP_Guarantee", "high", "theory"),
 ]
+
 
 def plot_loss_curves(histories: Dict[str, list], out_dir: str, ds: str):
     viz.set_style()
@@ -98,6 +91,7 @@ def plot_loss_curves(histories: Dict[str, list], out_dir: str, ds: str):
         fig.savefig(os.path.join(out_dir, f"{ds}_{name}_curves.png"), bbox_inches="tight")
         plt.close(fig)
 
+
 def scorecard(results: Dict[str, Dict], proposed: str = "ICS-DGRN") -> pd.DataFrame:
     rows = []
     for dim, direction, kind in SCORE_DIMS:
@@ -127,6 +121,7 @@ def scorecard(results: Dict[str, Dict], proposed: str = "ICS-DGRN") -> pd.DataFr
         )
     return pd.DataFrame(rows)
 
+
 def run_one_model(name, data, epochs, seed, loss):
     N, H, hist = data["n_nodes"], data["horizon"], data["hist_len"]
     model = build_model(name, N, hist, H)
@@ -147,6 +142,7 @@ def run_one_model(name, data, epochs, seed, loss):
     for h in pack["history"]:
         h["loss"] = pack.get("loss_name", loss)
     return pack, yp, infer_sec
+
 
 def run_dataset(name: str, epochs: int = 200, seed: int = 42, max_train: int = 800, max_val: int = 150, max_test: int = 250):
     out_dir = os.path.join(RESULT_ROOT, name)
@@ -258,6 +254,7 @@ def run_dataset(name: str, epochs: int = 200, seed: int = 42, max_train: int = 8
         )
     return df
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--datasets", nargs="+", default=["PEMS08", "PEMS04", "PEMS03"])
@@ -315,6 +312,7 @@ def main():
     with open(os.path.join(RESULT_ROOT, "REPORT.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
     print("Saved", RESULT_ROOT)
+
 
 if __name__ == "__main__":
     main()

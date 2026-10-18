@@ -1,19 +1,3 @@
-# Copyright 2024-2026 chaosbull
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# Author: chaosbull
-# Project: ICS-DGRN
-
 """Visualization helpers (paper-style figures)."""
 
 from __future__ import annotations
@@ -29,15 +13,18 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+
 def _ensure_dir(path: str) -> str:
     os.makedirs(path, exist_ok=True)
     return path
+
 
 def set_style() -> None:
     sns.set_theme(style="whitegrid", context="paper", font_scale=1.15)
     plt.rcParams["figure.dpi"] = 140
     plt.rcParams["savefig.dpi"] = 200
     plt.rcParams["axes.unicode_minus"] = False
+
 
 def plot_prediction_curve(
     y_true: np.ndarray,
@@ -61,6 +48,7 @@ def plot_prediction_curve(
     fig.tight_layout()
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
+
 
 def plot_scatter(
     y_true: np.ndarray,
@@ -86,6 +74,7 @@ def plot_scatter(
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
 
+
 def plot_error_hist(
     y_true: np.ndarray,
     y_pred: np.ndarray,
@@ -102,6 +91,7 @@ def plot_error_hist(
     fig.tight_layout()
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
+
 
 def plot_metric_bars(
     results: Dict[str, Dict[str, float]],
@@ -123,6 +113,7 @@ def plot_metric_bars(
     fig.tight_layout()
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
+
 
 def plot_radar(
     results: Dict[str, Dict[str, float]],
@@ -156,6 +147,7 @@ def plot_radar(
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
 
+
 def plot_heatmap_metrics(
     df: pd.DataFrame,
     out_path: str,
@@ -168,6 +160,7 @@ def plot_heatmap_metrics(
     fig.tight_layout()
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
+
 
 def plot_adjacency(
     adj: np.ndarray,
@@ -186,6 +179,7 @@ def plot_adjacency(
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
 
+
 def plot_esp_decay(
     curves: Dict[str, np.ndarray],
     out_path: str,
@@ -202,6 +196,7 @@ def plot_esp_decay(
     fig.tight_layout()
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
+
 
 def plot_horizon_curves(
     horizon_metrics: Dict[str, List[float]],
@@ -221,6 +216,7 @@ def plot_horizon_curves(
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
 
+
 def save_table(df: pd.DataFrame, out_csv: str, out_xlsx: Optional[str] = None) -> None:
     _ensure_dir(os.path.dirname(out_csv) or ".")
     df.to_csv(out_csv, index=True, float_format="%.6g")
@@ -229,6 +225,7 @@ def save_table(df: pd.DataFrame, out_csv: str, out_xlsx: Optional[str] = None) -
             df.to_excel(out_xlsx)
         except Exception:
             pass
+
 
 def plot_ablation(
     names: Sequence[str],

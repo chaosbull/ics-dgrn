@@ -1,19 +1,3 @@
-# Copyright 2024-2026 chaosbull
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# Author: chaosbull
-# Project: ICS-DGRN
-
 """
 Time-series experiments on ICS-DESN paper datasets.
 Baselines are reservoir / classical ML (same paradigm as ICS-DESN).
@@ -56,6 +40,7 @@ from utils.esp_analysis import simulate_state_difference
 
 RESULT_ROOT = os.path.join(ROOT, "result", "timeseries")
 
+
 def _fit_seq_rc(model, u_tr, y_tr, u_te_full, y_te, wash: int):
     """Train on prefix; predict on test using warm-start wash from train tail."""
     model.fit(u_tr, y_tr)
@@ -63,6 +48,7 @@ def _fit_seq_rc(model, u_tr, y_tr, u_te_full, y_te, wash: int):
     u_all = np.vstack([u_tr[-wash:], u_te_full]) if wash > 0 else u_te_full
     yp = model.predict(u_all, washout=wash)
     return yp[: len(y_te)]
+
 
 def _build_graph_seq(raw: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, int]:
     """
@@ -83,6 +69,7 @@ def _build_graph_seq(raw: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarra
     n_tr = int(0.8 * len(u))
     return u, y, adj, n_tr
 
+
 def _fit_dgrn_seq(dgrn: ICSDGRN, u: np.ndarray, y: np.ndarray, n_tr: int, wash: int, ridge: float):
     dgrn.reset()
     feats = []
@@ -98,6 +85,7 @@ def _fit_dgrn_seq(dgrn: ICSDGRN, u: np.ndarray, y: np.ndarray, n_tr: int, wash: 
     all_f = [dgrn.step(u[t]) for t in range(len(u))]
     yp = ridge_predict(dgrn.wout, add_bias(np.stack(all_f, axis=1))).T
     return yp[n_tr:], y[n_tr:]
+
 
 def run_one_dataset(name: str, out_dir: str, max_samples: int = 4000, seed: int = 42) -> pd.DataFrame:
     os.makedirs(out_dir, exist_ok=True)
@@ -201,6 +189,7 @@ def run_one_dataset(name: str, out_dir: str, max_samples: int = 4000, seed: int 
     print(df.round(6))
     return df
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--datasets", nargs="+", default=["logistic", "lorenz", "sunspot", "ETTh1", "weather"])
@@ -226,6 +215,7 @@ def main():
     pivot = big.reset_index().pivot_table(index="index", columns="dataset", values="MSE")
     viz.plot_heatmap_metrics(pivot, os.path.join(RESULT_ROOT, "summary_mse_heatmap.png"), title="MSE across datasets")
     print("Saved:", RESULT_ROOT)
+
 
 if __name__ == "__main__":
     main()
