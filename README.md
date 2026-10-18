@@ -139,7 +139,7 @@ Against the lowest-MAE baseline on each dataset (DeepESN in all three), ICS-DGRN
 
 On PEMS08, a single reservoir layer is worse than the three-layer model (MAE 21.874 vs 21.641). Removing graph propagation or compression does not increase MAE on that split, and a rewired graph is not worse than the sensor graph. Training time is lower than STGCN on PEMS08 (54 s vs 120 s) and higher than AGCRN (14 s). Fixed reservoir weights make the stored parameter count larger than the trainable count (51339 vs 39531 on PEMS08).
 
-ESP scaling with `tau <= 0.9` meets the spectral sufficient condition, and the measured state difference grows as `tau` increases. That sweep does not show a matching rise in forecast MAE. Plots and the remaining tables are under [`result/pems_newexp/`](result/pems_newexp/).
+ESP scaling with `tau <= 0.9` meets the spectral sufficient condition, and the measured state difference grows as `tau` increases. That sweep does not show a matching rise in forecast MAE.
 
 ---
 
