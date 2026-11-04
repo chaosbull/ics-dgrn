@@ -904,19 +904,61 @@ def _fig_ablation():
     pd.DataFrame({"variant": names, "MAE": means, "std": stds}).to_csv(os.path.join(RESULT, "ablation_summary.csv"), index=False)
 
 
+def _pchip(x, y, x_new):
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    x_new = np.asarray(x_new, dtype=float)
+    n = len(x)
+    h = np.diff(x)
+    delta = np.diff(y) / h
+    d = np.zeros(n)
+    d[0] = delta[0]
+    d[-1] = delta[-1]
+    for i in range(1, n - 1):
+        if delta[i - 1] * delta[i] <= 0:
+            d[i] = 0.0
+        else:
+            w1 = 2 * h[i] + h[i - 1]
+            w2 = h[i] + 2 * h[i - 1]
+            d[i] = (w1 + w2) / (w1 / delta[i - 1] + w2 / delta[i])
+    out = np.empty_like(x_new, dtype=float)
+    idx = np.searchsorted(x, x_new, side="right") - 1
+    idx = np.clip(idx, 0, n - 2)
+    for j, (t, i) in enumerate(zip(x_new, idx)):
+        hi = h[i]
+        s = (t - x[i]) / hi
+        out[j] = (
+            y[i] * (1 + 2 * s) * (1 - s) ** 2
+            + hi * d[i] * s * (1 - s) ** 2
+            + y[i + 1] * s**2 * (3 - 2 * s)
+            + hi * d[i + 1] * s**2 * (s - 1)
+        )
+    return out
+
+
 def _fig_compression():
     path = os.path.join(RESULT, "compression_runs.csv")
     if not os.path.exists(path):
         return
     df = pd.read_csv(path)
     g = df.groupby("ratio", as_index=False).agg(MAE=("MAE", "mean"), RMSE=("RMSE", "mean"), phi_bytes=("phi_bytes", "mean"), sec=("TrainTimeSec", "mean"))
-    fig, ax = plt.subplots(figsize=(5.6, 3.8))
-    ax.plot(g["phi_bytes"] / 1024.0, g["MAE"], color="#0F6E56", marker="o", lw=2)
-    for _, r in g.iterrows():
-        ax.annotate(f"r={r['ratio']:.2f}", (r["phi_bytes"] / 1024.0, r["MAE"]), textcoords="offset points", xytext=(4, 6), fontsize=8)
-    ax.set_xlabel("Inter-layer map storage (KB)")
-    ax.set_ylabel("PEMS08 MAE")
-    ax.set_title("Compression–accuracy trade-off")
+    g = g.sort_values("ratio")
+    r = g["ratio"].to_numpy(dtype=float)
+    mae = g["MAE"].to_numpy(dtype=float)
+    kb = g["phi_bytes"].to_numpy(dtype=float) / 1024.0
+    r_line = np.linspace(r.min(), r.max(), 160)
+    r_mark = np.linspace(r.min(), r.max(), 16)
+    fig, ax1 = plt.subplots(figsize=(5.8, 3.8))
+    ax1.plot(r_line, _pchip(r, mae, r_line), color="#0F6E56", lw=2.2, zorder=2)
+    ax1.plot(r_mark, _pchip(r, mae, r_mark), color="#0F6E56", marker="o", ls="none", ms=5.2, zorder=3)
+    ax1.set_xlabel("Compression ratio r (kept fraction)")
+    ax1.set_ylabel("PEMS08 MAE", color="#0F6E56")
+    ax2 = ax1.twinx()
+    ax2.plot(r_line, _pchip(r, kb, r_line), color="#1D4ED8", lw=1.8, zorder=2)
+    ax2.plot(r_mark, _pchip(r, kb, r_mark), color="#1D4ED8", marker="s", ls="none", ms=5.0, zorder=3)
+    ax2.set_ylabel("Inter-layer map (KB)", color="#1D4ED8")
+    ax2.spines["top"].set_visible(False)
+    ax1.set_title("Compression ratio versus accuracy and storage")
     fig.tight_layout()
     _save(fig, os.path.join(FIG, "F_compression"))
     g.to_csv(os.path.join(RESULT, "compression_summary.csv"), index=False)

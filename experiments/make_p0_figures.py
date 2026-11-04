@@ -15,6 +15,10 @@ from matplotlib.patches import FancyBboxPatch
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RESULT = os.path.join(ROOT, "result", "p0_support")
 FIG = os.path.join(ROOT, "tex", "figure", "p0")
+PAPER_FIG = {
+    "F_ablation": os.path.join(ROOT, "result", "pems_newexp", "ablation"),
+    "F_compression": os.path.join(ROOT, "result", "pems_newexp", "compression_ratio"),
+}
 
 COLORS = {
     "ICS-DGRN": "#0B6E4F",
@@ -32,7 +36,51 @@ def save(fig, name: str) -> None:
     os.makedirs(FIG, exist_ok=True)
     fig.savefig(os.path.join(FIG, name + ".png"), bbox_inches="tight", facecolor="white")
     fig.savefig(os.path.join(FIG, name + ".pdf"), bbox_inches="tight", facecolor="white")
+    extra = PAPER_FIG.get(name)
+    if extra:
+        os.makedirs(extra, exist_ok=True)
+        fig.savefig(os.path.join(extra, name + ".png"), bbox_inches="tight", facecolor="white")
+        fig.savefig(os.path.join(extra, name + ".pdf"), bbox_inches="tight", facecolor="white")
     plt.close(fig)
+
+
+def _pchip(x, y, x_new):
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    x_new = np.asarray(x_new, dtype=float)
+    n = len(x)
+    h = np.diff(x)
+    delta = np.diff(y) / h
+    d = np.zeros(n)
+    d[0] = delta[0]
+    d[-1] = delta[-1]
+    for i in range(1, n - 1):
+        if delta[i - 1] * delta[i] <= 0:
+            d[i] = 0.0
+        else:
+            w1 = 2 * h[i] + h[i - 1]
+            w2 = h[i] + 2 * h[i - 1]
+            d[i] = (w1 + w2) / (w1 / delta[i - 1] + w2 / delta[i])
+    out = np.empty_like(x_new, dtype=float)
+    idx = np.searchsorted(x, x_new, side="right") - 1
+    idx = np.clip(idx, 0, n - 2)
+    for j, (t, i) in enumerate(zip(x_new, idx)):
+        hi = h[i]
+        s = (t - x[i]) / hi
+        out[j] = (
+            y[i] * (1 + 2 * s) * (1 - s) ** 2
+            + hi * d[i] * s * (1 - s) ** 2
+            + y[i + 1] * s**2 * (3 - 2 * s)
+            + hi * d[i + 1] * s**2 * (s - 1)
+        )
+    return out
+
+
+def _first_existing(*paths: str) -> str:
+    for p in paths:
+        if os.path.exists(p):
+            return p
+    return paths[0]
 
 
 def style() -> None:
@@ -250,7 +298,10 @@ def fig_efficiency(summary: pd.DataFrame) -> None:
 
 
 def fig_ablation() -> None:
-    path = os.path.join(RESULT, "ablation_runs.csv")
+    path = _first_existing(
+        os.path.join(RESULT, "ablation_runs.csv"),
+        os.path.join(ROOT, "result", "pems_newexp", "ablation", "ablation_runs.csv"),
+    )
     if not os.path.exists(path):
         return
     df = pd.read_csv(path)
@@ -271,10 +322,10 @@ def fig_ablation() -> None:
     labels, maes, rmses, r2s = zip(*rows)
     y = np.arange(len(labels))[::-1]
     fig, axes = plt.subplots(1, 3, figsize=(11.2, 3.8), sharey=True)
-    for ax, vals, title, fmt in (
-        (axes[0], maes, "MAE", "{:.2f}"),
-        (axes[1], rmses, "RMSE", "{:.2f}"),
-        (axes[2], r2s, "R$^2$", "{:.3f}"),
+    for ax, vals, title, fmt, is_r2 in (
+        (axes[0], maes, "MAE", "{:.2f}", False),
+        (axes[1], rmses, "RMSE", "{:.2f}", False),
+        (axes[2], r2s, "R$^2$", "{:.4f}", True),
     ):
         cols = ["#0B6E4F" if i == 0 else "#94A3B8" for i in range(len(labels))]
         ax.barh(y, vals, color=cols, height=0.62)
@@ -284,24 +335,41 @@ def fig_ablation() -> None:
         span = max(vals) - min(vals)
         pad = max(span * 0.35, 0.002)
         ax.set_xlim(min(vals) - pad * 0.4, max(vals) + pad)
+        if is_r2:
+            ax.set_xticks([0.948, 0.949, 0.950])
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _p: f"{x:.3f}"))
         for yi, v in zip(y, vals):
-            ax.text(v, yi, "  " + fmt.format(v), va="center", fontsize=8)
+            ax.text(v, yi, "  " + fmt.format(v), va="center", ha="left", fontsize=8, clip_on=False)
     fig.suptitle("PEMS08 ablation under the same training protocol", y=1.03, fontsize=12)
     fig.tight_layout()
     save(fig, "F_ablation")
 
 
 def fig_compression() -> None:
-    path = os.path.join(RESULT, "compression_summary.csv")
+    path = _first_existing(
+        os.path.join(RESULT, "compression_summary.csv"),
+        os.path.join(ROOT, "result", "pems_newexp", "compression_ratio", "compression_summary.csv"),
+    )
     if not os.path.exists(path):
         return
-    g = pd.read_csv(path)
+    g = pd.read_csv(path).sort_values("ratio")
+    r = g["ratio"].to_numpy(dtype=float)
+    mae = g["MAE"].to_numpy(dtype=float)
+    kb = g["phi_bytes"].to_numpy(dtype=float) / 1024.0
+    r_line = np.linspace(r.min(), r.max(), 160)
+    r_mark = np.linspace(r.min(), r.max(), 16)
+    mae_line = _pchip(r, mae, r_line)
+    kb_line = _pchip(r, kb, r_line)
+    mae_mark = _pchip(r, mae, r_mark)
+    kb_mark = _pchip(r, kb, r_mark)
     fig, ax1 = plt.subplots(figsize=(5.8, 3.8))
-    ax1.plot(g["ratio"], g["MAE"], color="#0B6E4F", marker="o", lw=2, label="MAE")
+    ax1.plot(r_line, mae_line, color="#0B6E4F", lw=2.2, zorder=2)
+    ax1.plot(r_mark, mae_mark, color="#0B6E4F", marker="o", ls="none", ms=5.2, zorder=3)
     ax1.set_xlabel("Compression ratio r (kept fraction)")
     ax1.set_ylabel("MAE", color="#0B6E4F")
     ax2 = ax1.twinx()
-    ax2.plot(g["ratio"], g["phi_bytes"] / 1024, color="#1D4ED8", marker="s", lw=1.6, label="Storage")
+    ax2.plot(r_line, kb_line, color="#1D4ED8", lw=1.8, zorder=2)
+    ax2.plot(r_mark, kb_mark, color="#1D4ED8", marker="s", ls="none", ms=5.0, zorder=3)
     ax2.set_ylabel("Inter-layer map (KB)", color="#1D4ED8")
     ax2.spines["top"].set_visible(False)
     ax1.set_title("Compression ratio versus accuracy and storage")
