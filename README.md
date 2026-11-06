@@ -5,7 +5,7 @@ Interlayer Sparse Compression Deep Graph Reservoir Network for short-term traffi
 | | |
 |---|---|
 | Author | [chaosbull](https://github.com/chaosbull) |
-| License | [Apache License 2.0](LICENSE) |
+| License | [CC BY-NC 4.0](LICENSE) |
 | Raw PEMS data | not included; prepared as in [STLGRU](https://github.com/Kishor-Bhaumik/STLGRU). See [data/README.md](data/README.md) |
 
 ICS-DGRN stacks graph reservoir layers and compresses each layer with a fixed Gaussian map before the next layer. Recurrent weights are scaled once so that the echo-state sufficient condition holds (`esp_target=0.9` by default), then frozen. Input maps, leak, and the readout are trained. The checked-in model uses three reservoir widths `[48, 36, 24]` and compression widths `[24, 16]`.
@@ -46,7 +46,7 @@ No paper sources and no raw traffic tensors are included.
 ```bash
 conda create -n py312 python=3.12 -y
 conda activate py312
-pip install torch --index-url https://download.pytorch.org/whl/cu121
+pip install torch --index-url [https://download.pytorch.org/whl/cu121](https://download.pytorch.org/whl/cu121)
 pip install -r requirements.txt
 ```
 
@@ -148,8 +148,8 @@ ESP scaling with `tau <= 0.9` meets the spectral sufficient condition, and the m
 ```
 Author: chaosbull
 Project: ICS-DGRN
-https://github.com/chaosbull/ics-dgrn
-License: Apache-2.0
+[https://github.com/chaosbull/ics-dgrn](https://github.com/chaosbull/ics-dgrn)
+License: CC-BY-NC-4.0
 ```
 
 For the PEMS files, also cite [STLGRU](https://github.com/Kishor-Bhaumik/STLGRU) and the original PEMS providers.
@@ -158,6 +158,8 @@ For the PEMS files, also cite [STLGRU](https://github.com/Kishor-Bhaumik/STLGRU)
 
 ## License
 
-Copyright 2024-2026 chaosbull
+[![CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
 
-Apache License, Version 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Copyright © 2026-11-05 [chaosbull](https://github.com/chaosbull)
+
+This repository is licensed under the [Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/) License. See [LICENSE](LICENSE) for full details. You are free to share and adapt the material for non-commercial purposes, provided that you give appropriate credit to the original author (chaosbull) and cite the original paper in any derivative works. Any unauthorized commercial use is strictly prohibited.
